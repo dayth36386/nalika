@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
-import { MaximizeIcon, MinimizeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react"
+import { ClockIcon, MaximizeIcon, TimerIcon, MinimizeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Clock } from "@/components/clock"
+import { Countdown } from "@/components/countdown"
+import { countdownStatus, useCountdown } from "@/hooks/use-countdown"
 import { SettingsSheet } from "@/components/settings-sheet"
 import { AboutButton } from "@/components/about-button"
 import { NowPlaying } from "@/components/now-playing"
@@ -86,6 +88,8 @@ export default function Home() {
   const onImage = settings.backgroundMode === "image" && !!image
   const t = translator(settings.lang)
   const spotify = useSpotify(hydrated && settings.showSpotify)
+  const countdown = useCountdown()
+  const isCountdown = settings.mode === "countdown"
 
   useEffect(() => {
     if (spotify.status === "error") toast.error(t("spotifyConnectError"))
@@ -114,6 +118,18 @@ export default function Home() {
         case "KeyT":
           if (!inDialog) setTheme(dark ? "light" : "dark")
           break
+        case "KeyC":
+          if (!inDialog) store.update("mode", isCountdown ? "clock" : "countdown")
+          break
+        case "Space": {
+          if (inDialog || !isCountdown || e.target instanceof HTMLButtonElement) break
+          const st = countdownStatus(countdown.data, Date.now())
+          if (st === "running") countdown.pause()
+          else if (st === "paused") countdown.resume()
+          else break
+          e.preventDefault()
+          break
+        }
       }
     }
     window.addEventListener("keydown", onKey)
@@ -147,7 +163,13 @@ export default function Home() {
 
       {/* Clock */}
       <div className={cn("transition-opacity duration-700", now && hydrated ? "opacity-100" : "opacity-0")}>
-        {now && hydrated && <Clock now={now} settings={settings} onImage={onImage} />}
+        {now &&
+          hydrated &&
+          (isCountdown ? (
+            <Countdown store={countdown} now={now} settings={settings} onImage={onImage} hideUi={hideUi} t={t} />
+          ) : (
+            <Clock now={now} settings={settings} onImage={onImage} />
+          ))}
       </div>
 
       {/* Controls */}
@@ -157,6 +179,12 @@ export default function Home() {
           hideUi ? "pointer-events-none -translate-y-2 opacity-0" : "opacity-100"
         )}
       >
+        <IconButton
+          label={`${isCountdown ? t("modeClock") : t("modeCountdown")} (C)`}
+          onClick={() => store.update("mode", isCountdown ? "clock" : "countdown")}
+        >
+          {isCountdown ? <ClockIcon /> : <TimerIcon />}
+        </IconButton>
         <IconButton label={`${dark ? t("lightMode") : t("darkMode")} (T)`} onClick={() => setTheme(dark ? "light" : "dark")}>
           {dark ? <SunIcon /> : <MoonIcon />}
         </IconButton>

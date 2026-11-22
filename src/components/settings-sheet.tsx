@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
-import { BriefcaseIcon, DropletsIcon, PencilLineIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
+import { BriefcaseIcon, ClockIcon, TimerIcon, DropletsIcon, PencilLineIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -131,6 +131,21 @@ export function SettingsSheet({
                 </TabsTrigger>
                 <TabsTrigger value="system">
                   <MonitorIcon /> {t("themeSystem")}
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </Section>
+
+          <Separator />
+
+          <Section title={t("mode")}>
+            <Tabs value={s.mode} onValueChange={(v) => update("mode", v as Settings["mode"])}>
+              <TabsList className="w-full">
+                <TabsTrigger value="clock">
+                  <ClockIcon /> {t("modeClock")}
+                </TabsTrigger>
+                <TabsTrigger value="countdown">
+                  <TimerIcon /> {t("modeCountdown")}
                 </TabsTrigger>
               </TabsList>
             </Tabs>

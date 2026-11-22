@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from "react"
 import { detectLang, type Lang } from "@/lib/i18n"
 
 export type BackgroundMode = "three" | "image"
+export type AppMode = "clock" | "countdown"
 export type ScenePalette = "aurora" | "sunset" | "ocean" | "mono"
 export type ImageEffect = "none" | "drift" | "parallax" | "liquid" | "ripple"
 
 export type Settings = {
+  mode: AppMode
   timezone: string
   extraZones: string[]
   hour12: boolean
@@ -50,6 +52,7 @@ function browserTimezone() {
 
 export function defaultSettings(): Settings {
   return {
+    mode: "clock",
     timezone: browserTimezone(),
     extraZones: [],
     hour12: false,

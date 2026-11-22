@@ -8,7 +8,8 @@ import "./globals.css"
 const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] })
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
-const description = "นาฬิกาเต็มจอสำหรับเปิดไว้ระหว่างทำงาน"
+const description =
+  "นาฬิกาเต็มจอใช้ฟรี เปิดไว้ระหว่างทำงานหรือคุมสอบ มีโหมดนับถอยหลัง พื้นหลัง 3D รองรับมือถือ และ 4 ภาษา"
 
 // Absolute base for og:image URLs. Override with NEXT_PUBLIC_SITE_URL if you add a custom domain.
 const siteUrl =

@@ -26,13 +26,25 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # semantic-release pushes the vX.Y.Z tag and creates the GitHub Release
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history + tags so semantic-release can work out the next version
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      # feat: → 1.x.0, fix:/perf: → 1.0.x, "feat!:" or BREAKING CHANGE → x.0.0. Other prefixes (docs:, chore:…) don't release.
+      # Writes the new version into package.json (not committed) so the build below shows it in the ⓘ popover.
+      - name: Release (version tag + GitHub Release)
+        if: github.ref == 'refs/heads/main'
+        run: npx --yes semantic-release@25.0.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest

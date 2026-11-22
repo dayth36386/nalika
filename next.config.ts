@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
+
+// semantic-release writes the release version into package.json during CI, right before the build.
+const { version } = JSON.parse(readFileSync("./package.json", "utf8")) as { version: string };
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   cacheComponents: true,
   // keep the bottom-left corner free for the Spotify card
   devIndicators: { position: "top-left" },

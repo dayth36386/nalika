@@ -37,6 +37,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#05060d",
+  // draw under the notch / home indicator; UI uses env(safe-area-inset-*)
+  viewportFit: "cover",
 }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

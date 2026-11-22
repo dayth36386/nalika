@@ -5,16 +5,9 @@ import { MinusIcon, PauseIcon, PlayIcon, PlusIcon, RotateCcwIcon, Volume2Icon, V
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
-import {
-  countdownRemaining,
-  countdownStatus,
-  playAlarm,
-  primeAudio,
-  type CountdownStore,
-} from "@/hooks/use-countdown"
+import { countdownRemaining, countdownStatus, playAlarm, primeAudio, type CountdownStore } from "@/hooks/use-countdown"
 import type { T } from "@/lib/i18n"
 import type { Settings } from "@/lib/settings"
-import { cityName } from "@/lib/time"
 import { cn } from "@/lib/utils"
 
 const PRESETS = [15, 30, 60, 90, 120, 180]
@@ -51,7 +44,7 @@ function Stepper({
   const clamp = (v: number) => Math.min(max, Math.max(0, v))
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <Button variant="outline" size="icon" aria-label={`- ${label}`} onClick={() => onChange(clamp(value - step))}>
           <MinusIcon />
         </Button>
@@ -62,7 +55,7 @@ function Stepper({
           max={max}
           value={value}
           onChange={(e) => onChange(clamp(Number(e.target.value) || 0))}
-          className="h-16 w-24 text-center font-mono text-4xl tabular-nums md:text-4xl"
+          className="h-14 w-16 px-1 text-center font-mono text-3xl tabular-nums sm:h-16 sm:w-24 sm:text-4xl md:text-4xl phone-landscape:h-12 phone-landscape:text-3xl"
           aria-label={label}
         />
         <Button variant="outline" size="icon" aria-label={`+ ${label}`} onClick={() => onChange(clamp(value + step))}>
@@ -81,54 +74,60 @@ function Setup({ store, t }: { store: CountdownStore; t: T }) {
   const totalMin = hours * 60 + minutes
 
   return (
-    <div className="mx-auto w-full max-w-lg rounded-3xl border border-border/60 bg-background/60 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-      <h2 className="mb-6 text-center text-lg font-semibold">{t("modeCountdown")}</h2>
+    <div className="mx-4 rounded-3xl border border-border/60 bg-background/60 p-5 shadow-2xl backdrop-blur-xl sm:mx-auto sm:w-full sm:max-w-lg sm:p-8 phone-landscape:mx-auto phone-landscape:w-[calc(100%-2rem)] phone-landscape:max-w-3xl phone-landscape:p-5">
+      <h2 className="mb-5 text-center text-lg font-semibold phone-landscape:hidden">{t("modeCountdown")}</h2>
 
-      <Input
-        value={store.data.title}
-        onChange={(e) => store.setTitle(e.target.value)}
-        placeholder={t("cdTitlePlaceholder")}
-        className="mb-6 text-center"
-      />
+      <div className="phone-landscape:grid phone-landscape:grid-cols-2 phone-landscape:items-center phone-landscape:gap-6">
+        <div>
+          <Input
+            value={store.data.title}
+            onChange={(e) => store.setTitle(e.target.value)}
+            placeholder={t("cdTitlePlaceholder")}
+            className="mb-5 text-center phone-landscape:mb-4"
+          />
 
-      <div className="flex items-start justify-center gap-6">
-        <Stepper value={hours} onChange={setHours} max={23} label={t("cdHours")} />
-        <Stepper value={minutes} onChange={setMinutes} max={59} label={t("cdMinutes")} step={5} />
-      </div>
+          <div className="flex items-start justify-center gap-3 sm:gap-6">
+            <Stepper value={hours} onChange={setHours} max={23} label={t("cdHours")} />
+            <Stepper value={minutes} onChange={setMinutes} max={59} label={t("cdMinutes")} step={5} />
+          </div>
+        </div>
 
-      <div className="mt-6 flex flex-wrap justify-center gap-2">
-        {PRESETS.map((m) => (
+        <div>
+          <div className="mt-5 flex flex-wrap justify-center gap-2 phone-landscape:mt-0">
+            {PRESETS.map((m) => (
+              <Button
+                key={m}
+                variant={totalMin === m ? "default" : "outline"}
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  setHours(Math.floor(m / 60))
+                  setMinutes(m % 60)
+                }}
+              >
+                {presetLabel(m, t)}
+              </Button>
+            ))}
+          </div>
+
+          <label className="mt-5 flex items-center justify-center gap-3 text-sm phone-landscape:mt-3">
+            <Switch checked={store.data.sound} onCheckedChange={store.setSound} />
+            {t("cdSound")}
+          </label>
+
           <Button
-            key={m}
-            variant={totalMin === m ? "default" : "outline"}
-            size="sm"
-            className="rounded-full"
+            size="lg"
+            className="mt-5 h-14 w-full rounded-2xl text-lg phone-landscape:mt-3 phone-landscape:h-12"
+            disabled={totalMin <= 0}
             onClick={() => {
-              setHours(Math.floor(m / 60))
-              setMinutes(m % 60)
+              primeAudio()
+              store.start(totalMin * 60_000)
             }}
           >
-            {presetLabel(m, t)}
+            <PlayIcon className="fill-current" /> {t("cdStart")}
           </Button>
-        ))}
+        </div>
       </div>
-
-      <label className="mt-6 flex items-center justify-center gap-3 text-sm">
-        <Switch checked={store.data.sound} onCheckedChange={store.setSound} />
-        {t("cdSound")}
-      </label>
-
-      <Button
-        size="lg"
-        className="mt-6 h-14 w-full rounded-2xl text-lg"
-        disabled={totalMin <= 0}
-        onClick={() => {
-          primeAudio()
-          store.start(totalMin * 60_000)
-        }}
-      >
-        <PlayIcon className="fill-current" /> {t("cdStart")}
-      </Button>
     </div>
   )
 }
@@ -140,6 +139,7 @@ export function Countdown({
   onImage,
   hideUi,
   t,
+  placeLabel,
 }: {
   store: CountdownStore
   now: Date
@@ -147,6 +147,7 @@ export function Countdown({
   onImage: boolean
   hideUi: boolean
   t: T
+  placeLabel: string
 }) {
   const nowMs = now.getTime()
   const { data } = store
@@ -181,52 +182,83 @@ export function Countdown({
       hourCycle: s.hour12 ? "h12" : "h23",
     }).format(d)
 
+  const display = fmtCountdown(remaining)
   const urgent = status !== "done" && remaining <= 60_000
   const warning = status !== "done" && !urgent && remaining <= 5 * 60_000
-  const muted = onImage ? "text-white/70" : "text-muted-foreground"
+  const custom = !!s.textColor
+  const muted = custom ? "opacity-70" : onImage ? "text-white/70" : "text-muted-foreground"
 
   return (
     <div
       className={cn(
         "w-full select-none px-4 text-center",
-        onImage ? "text-white [text-shadow:0_2px_24px_rgb(0_0_0/0.45)]" : "text-foreground"
+        onImage && "[text-shadow:0_2px_24px_rgb(0_0_0/0.45)]",
+        !custom && (onImage ? "text-white" : "text-foreground"),
       )}
+      style={custom ? { color: s.textColor } : undefined}
     >
       {/* small wall clock */}
-      <div className={cn("mb-6 font-mono text-[clamp(1rem,2.4vw,1.75rem)] tabular-nums tracking-wider", muted)}>
-        {timeFmt(now)} <span className="font-sans text-[0.6em] uppercase tracking-[0.3em]">· {cityName(s.timezone)}</span>
+      <div
+        className={cn(
+          "mb-6 font-mono text-[clamp(1rem,2.4vw,1.75rem)] tabular-nums tracking-wider phone-landscape:mb-1 phone-landscape:text-sm",
+          muted,
+        )}
+      >
+        {timeFmt(now)}{" "}
+        <span className="font-sans text-[0.6em] uppercase tracking-[0.3em]">· {placeLabel}</span>
       </div>
 
       {data.title.trim() && (
-        <div className="mb-4 text-[clamp(1.5rem,4vw,3.5rem)] font-medium leading-tight text-balance">{data.title}</div>
+        <div className="mb-4 text-[clamp(1.25rem,min(4.5vw,7vh),3.5rem)] font-medium leading-tight text-balance phone-landscape:mb-1">
+          {data.title}
+        </div>
       )}
 
       {/* big countdown */}
       <div
         className={cn(
           "font-mono font-light leading-none tabular-nums tracking-tight transition-colors duration-700",
-          "text-[calc(clamp(5rem,22vw,22rem)*var(--clock-scale))]",
           warning && "text-amber-400",
           urgent && "text-red-500",
           status === "done" && "animate-pulse text-red-500",
-          status === "paused" && "opacity-50"
+          status === "paused" && "opacity-50",
         )}
-        style={{ "--clock-scale": s.clockScale || 1 } as React.CSSProperties}
+        style={{
+          // mono digits are ~0.6em wide: fit the string to ~88% of the width, capped by height
+          fontSize: `calc(min(${(88 / (display.length * 0.6)).toFixed(2)}vw, 36vh, 22rem) * ${s.clockScale || 1})`,
+        }}
         aria-live="polite"
       >
-        {fmtCountdown(remaining)}
+        {display}
       </div>
 
-      <div className={cn("mt-4 text-[clamp(1rem,2.6vw,2rem)] font-medium", status === "done" ? "text-red-500" : muted)}>
-        {status === "done" ? t("cdTimeUp") : status === "paused" ? t("cdPaused") : t("cdEndsAt", { time: timeFmt(new Date(endAt)) })}
+      <div
+        className={cn(
+          "mt-4 text-[clamp(1rem,2.6vw,2rem)] font-medium phone-landscape:mt-1 phone-landscape:text-base",
+          status === "done" ? "text-red-500" : muted,
+        )}
+      >
+        {status === "done"
+          ? t("cdTimeUp")
+          : status === "paused"
+            ? t("cdPaused")
+            : t("cdEndsAt", { time: timeFmt(new Date(endAt)) })}
       </div>
 
-      <div className="mx-auto mt-6 w-full max-w-2xl">
-        <div className={cn("h-2 overflow-hidden rounded-full", onImage ? "bg-white/20" : "bg-foreground/10")}>
+      <div className="mx-auto mt-6 w-full max-w-2xl phone-landscape:mt-2">
+        <div className={cn("h-2 overflow-hidden rounded-full", custom ? "bg-current/20" : onImage ? "bg-white/20" : "bg-foreground/10")}>
           <div
             className={cn(
               "h-full rounded-full transition-[width,background-color] duration-1000 ease-linear",
-              urgent || status === "done" ? "bg-red-500" : warning ? "bg-amber-400" : onImage ? "bg-white" : "bg-foreground/80"
+              urgent || status === "done"
+                ? "bg-red-500"
+                : warning
+                  ? "bg-amber-400"
+                  : onImage
+                    ? "bg-white"
+                    : custom
+                      ? "bg-current"
+                      : "bg-foreground/80",
             )}
             style={{ width: `${pct}%` }}
           />
@@ -236,8 +268,8 @@ export function Countdown({
       {/* controls — fade out with the rest of the UI */}
       <div
         className={cn(
-          "mt-8 flex flex-wrap items-center justify-center gap-3 transition-opacity duration-500",
-          hideUi ? "pointer-events-none opacity-0" : "opacity-100"
+          "mt-8 flex flex-wrap items-center justify-center gap-2 transition-opacity duration-500 sm:gap-3 phone-landscape:mt-3",
+          hideUi ? "pointer-events-none opacity-0" : "opacity-100",
         )}
       >
         {status !== "done" && (
@@ -248,7 +280,7 @@ export function Countdown({
           >
             {status === "paused" ? <PlayIcon className="fill-current" /> : <PauseIcon className="fill-current" />}
             {status === "paused" ? t("cdResume") : t("cdPause")}
-            <kbd className="ml-1 rounded bg-background/20 px-1.5 text-[10px] font-normal">Space</kbd>
+            <kbd className="ml-1 hidden rounded bg-background/20 px-1.5 text-[10px] font-normal [@media(pointer:fine)]:inline">Space</kbd>
           </Button>
         )}
         <Button size="lg" variant="outline" className="rounded-full" onClick={() => store.addTime(5 * 60_000)}>

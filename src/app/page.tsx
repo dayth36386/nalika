@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import dynamic from "next/dynamic"
 import { useTheme } from "next-themes"
 import { ClockIcon, MaximizeIcon, TimerIcon, MinimizeIcon, MoonIcon, SettingsIcon, SunIcon } from "lucide-react"
@@ -15,12 +15,15 @@ import { NowPlaying } from "@/components/now-playing"
 import { useSpotify } from "@/hooks/use-spotify"
 import { toast } from "sonner"
 import { useNow } from "@/hooks/use-now"
-import { useSettings } from "@/lib/settings"
+import { browserTimezone, useSettings } from "@/lib/settings"
+import { usePlaceName } from "@/hooks/use-place-name"
+import { cityName } from "@/lib/time"
 import { cn } from "@/lib/utils"
 import { translator } from "@/lib/i18n"
 
 const ThreeBackground = dynamic(() => import("@/components/three-background"), { ssr: false })
 const ImageBackground = dynamic(() => import("@/components/image-background"), { ssr: false })
+const WebcamPixelGrid = dynamic(() => import("@/components/ui/webcam-pixel-grid"), { ssr: false })
 
 function useIdle(ms: number) {
   const [idle, setIdle] = useState(false)
@@ -84,12 +87,31 @@ export default function Home() {
   const idle = useIdle(3000)
   const { isFs, toggle } = useFullscreen()
 
-  const dark = resolvedTheme !== "light"
-  const onImage = settings.backgroundMode === "image" && !!image
+  // resolvedTheme is only known on the client; assume dark until mounted so SSR and hydration match
+  const [mounted, setMounted] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount flag
+  useEffect(() => setMounted(true), [])
+  const dark = !mounted || resolvedTheme !== "light"
+  const onWebcam = settings.backgroundMode === "webcam"
+  // photo or camera background: use white text with a shadow for contrast
+  const onImage = (settings.backgroundMode === "image" && !!image) || onWebcam
   const t = translator(settings.lang)
   const spotify = useSpotify(hydrated && settings.showSpotify)
   const countdown = useCountdown()
   const isCountdown = settings.mode === "countdown"
+
+  // Device location only describes the selected time zone if it's the device's own zone.
+  const [deviceTz, setDeviceTz] = useState<string | null>(null)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only value
+  useEffect(() => setDeviceTz(browserTimezone()), [])
+  const placeAutoUsable = settings.placeMode === "auto" && settings.timezone === deviceTz
+  const place = usePlaceName(hydrated && placeAutoUsable, settings.lang)
+  const placeLabel =
+    settings.placeMode === "custom" && settings.customPlace.trim()
+      ? settings.customPlace.trim()
+      : placeAutoUsable && place.name
+        ? place.name
+        : cityName(settings.timezone)
 
   useEffect(() => {
     if (spotify.status === "error") toast.error(t("spotifyConnectError"))
@@ -138,11 +160,38 @@ export default function Home() {
 
   const hideUi = idle && !open
 
+  // camera denied / unavailable: tell the user and fall back to the 3D scene
+  const onWebcamError = useCallback(() => {
+    toast.error(t("webcamError"))
+    store.update("backgroundMode", "three")
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t/store.update are stable enough for a one-shot fallback
+  }, [settings.lang])
+
   return (
-    <main className={cn("relative isolate flex h-dvh w-full items-center justify-center overflow-hidden", hideUi && "cursor-none")}>
+    <main
+      className={cn(
+        // m-auto on the content centers it when it fits and lets it scroll when it doesn't (e.g. phone landscape)
+        "relative isolate flex h-dvh w-full overflow-x-hidden overflow-y-auto overscroll-none",
+        hideUi && "cursor-none"
+      )}
+    >
       {/* Background */}
       {hydrated &&
-        (onImage ? (
+        (onWebcam ? (
+          <div className="fixed inset-0 -z-10 bg-black">
+            <WebcamPixelGrid
+              gridCols={settings.webcamDensity}
+              gridRows={Math.round(settings.webcamDensity * 0.75)}
+              colorMode={settings.webcamColorMode}
+              monochromeColor={settings.webcamColor}
+              darken={settings.webcamDarken}
+              mirror={settings.webcamMirror}
+              backgroundColor="#000000"
+              showErrorUi={false}
+              onWebcamError={onWebcamError}
+            />
+          </div>
+        ) : onImage ? (
           <ImageBackground
             src={image!}
             effect={settings.imageEffect}
@@ -162,20 +211,35 @@ export default function Home() {
       )}
 
       {/* Clock */}
-      <div className={cn("transition-opacity duration-700", now && hydrated ? "opacity-100" : "opacity-0")}>
+      <div
+        className={cn(
+          "m-auto w-full pt-[max(4.5rem,env(safe-area-inset-top))] pb-[max(4.5rem,env(safe-area-inset-bottom))] transition-opacity duration-700",
+          "phone-landscape:pt-3 phone-landscape:pb-3",
+          settings.showSpotify && spotify.track && "pb-36 phone-landscape:pb-3",
+          now && hydrated ? "opacity-100" : "opacity-0"
+        )}
+      >
         {now &&
           hydrated &&
           (isCountdown ? (
-            <Countdown store={countdown} now={now} settings={settings} onImage={onImage} hideUi={hideUi} t={t} />
+            <Countdown
+              store={countdown}
+              now={now}
+              settings={settings}
+              onImage={onImage}
+              hideUi={hideUi}
+              t={t}
+              placeLabel={placeLabel}
+            />
           ) : (
-            <Clock now={now} settings={settings} onImage={onImage} />
+            <Clock now={now} settings={settings} onImage={onImage} placeLabel={placeLabel} />
           ))}
       </div>
 
       {/* Controls */}
       <div
         className={cn(
-          "fixed right-4 top-4 flex gap-2 transition-all duration-500",
+          "fixed right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-10 flex gap-2 transition-all duration-500",
           hideUi ? "pointer-events-none -translate-y-2 opacity-0" : "opacity-100"
         )}
       >
@@ -198,7 +262,7 @@ export default function Home() {
 
       {/* Spotify now playing */}
       {hydrated && now && settings.showSpotify && (
-        <div className="fixed bottom-4 left-4">
+        <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] z-10 origin-bottom-left phone-landscape:scale-75">
           <NowPlaying spotify={spotify} now={now} t={t} onImage={onImage} />
         </div>
       )}
@@ -206,7 +270,7 @@ export default function Home() {
       {/* Credit */}
       <div
         className={cn(
-          "fixed bottom-3 right-3 transition-opacity duration-500",
+          "fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-[max(0.75rem,env(safe-area-inset-right))] z-10 transition-opacity duration-500",
           hideUi ? "pointer-events-none opacity-0" : "opacity-100",
           onImage && "[&_button]:text-white/50 [&_button:hover]:text-white"
         )}
@@ -214,7 +278,7 @@ export default function Home() {
         <AboutButton t={t} />
       </div>
 
-      <SettingsSheet open={open} onOpenChange={setOpen} store={store} spotify={spotify} />
+      <SettingsSheet open={open} onOpenChange={setOpen} store={store} spotify={spotify} place={place} placeAutoUsable={placeAutoUsable} />
     </main>
   )
 }

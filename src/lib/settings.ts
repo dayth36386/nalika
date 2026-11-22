@@ -3,14 +3,20 @@
 import { useCallback, useEffect, useState } from "react"
 import { detectLang, type Lang } from "@/lib/i18n"
 
-export type BackgroundMode = "three" | "image"
+export type BackgroundMode = "three" | "image" | "webcam"
 export type AppMode = "clock" | "countdown"
+/** auto = city from the device location, timezone = city from the time zone, custom = typed text */
+export type PlaceMode = "auto" | "timezone" | "custom"
 export type ScenePalette = "aurora" | "sunset" | "ocean" | "mono"
 export type ImageEffect = "none" | "drift" | "parallax" | "liquid" | "ripple"
 
 export type Settings = {
   mode: AppMode
   timezone: string
+  placeMode: PlaceMode
+  customPlace: string
+  /** "" = follow the theme; otherwise a CSS colour for the clock text */
+  textColor: string
   extraZones: string[]
   hour12: boolean
   showSeconds: boolean
@@ -21,6 +27,11 @@ export type Settings = {
   sceneSpeed: number
   imageDim: number
   imageBlur: number
+  webcamColorMode: "webcam" | "monochrome"
+  webcamColor: string
+  webcamDarken: number
+  webcamMirror: boolean
+  webcamDensity: number
   imageEffect: ImageEffect
   imageEffectStrength: number
   imageParticles: boolean
@@ -42,7 +53,7 @@ export type Settings = {
 const SETTINGS_KEY = "work-clock:settings"
 const IMAGE_KEY = "work-clock:bg-image"
 
-function browserTimezone() {
+export function browserTimezone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Bangkok"
   } catch {
@@ -54,6 +65,9 @@ export function defaultSettings(): Settings {
   return {
     mode: "clock",
     timezone: browserTimezone(),
+    placeMode: "auto",
+    customPlace: "",
+    textColor: "",
     extraZones: [],
     hour12: false,
     showSeconds: true,
@@ -64,6 +78,11 @@ export function defaultSettings(): Settings {
     sceneSpeed: 1,
     imageDim: 35,
     imageBlur: 0,
+    webcamColorMode: "webcam",
+    webcamColor: "#00ff88",
+    webcamDarken: 0.35,
+    webcamMirror: true,
+    webcamDensity: 64,
     imageEffect: "drift",
     imageEffectStrength: 1,
     imageParticles: true,

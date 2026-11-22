@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
-import { BriefcaseIcon, ClockIcon, TimerIcon, DropletsIcon, PencilLineIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
+import { BriefcaseIcon, CameraIcon, ShieldCheckIcon, MapPinIcon, RefreshCwIcon, ClockIcon, TimerIcon, DropletsIcon, PencilLineIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TimezonePicker } from "@/components/timezone-picker"
 import { SpotifySettings } from "@/components/spotify-settings"
 import type { SpotifyStore } from "@/hooks/use-spotify"
+import type { PlaceStatus } from "@/hooks/use-place-name"
 import { compressImage, type ImageEffect, type ScenePalette, type Settings, type useSettings } from "@/lib/settings"
 import { cityName, offsetLabel } from "@/lib/time"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,9 @@ const PALETTES: { id: ScenePalette; name: string; swatch: string }[] = [
   { id: "ocean", name: "Ocean", swatch: "from-sky-500 to-emerald-400" },
   { id: "mono", name: "Mono", swatch: "from-zinc-500 to-zinc-100" },
 ]
+
+// "" = follow the light/dark theme
+const TEXT_COLORS = ["", "#ffffff", "#18181b", "#fbbf24", "#f472b6", "#22d3ee", "#4ade80", "#a78bfa"]
 
 const IMAGE_EFFECTS: { id: ImageEffect; label: TKey; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "none", label: "effectNone", icon: PauseIcon },
@@ -60,11 +64,15 @@ export function SettingsSheet({
   onOpenChange,
   store,
   spotify,
+  place,
+  placeAutoUsable,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   store: ReturnType<typeof useSettings>
   spotify: SpotifyStore
+  place: { name: string | null; status: PlaceStatus; refresh: () => void }
+  placeAutoUsable: boolean
 }) {
   const { settings: s, update, reset, image, setImage } = store
   const { theme, setTheme } = useTheme()
@@ -172,6 +180,96 @@ export function SettingsSheet({
                 <span className="text-xs tabular-nums text-muted-foreground">{Math.round(s.clockScale * 100)}%</span>
               </Row>
               <Slider min={0.5} max={1.5} step={0.05} value={[s.clockScale]} onValueChange={([v]) => update("clockScale", v)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-normal">{t("textColor")}</Label>
+              <div className="flex flex-wrap items-center gap-2">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c || "auto"}
+                    type="button"
+                    title={c || t("textColorAuto")}
+                    aria-label={c || t("textColorAuto")}
+                    aria-pressed={s.textColor === c}
+                    onClick={() => update("textColor", c)}
+                    className={cn(
+                      "size-7 rounded-full ring-1 ring-border transition-transform hover:scale-110",
+                      s.textColor === c && "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                    )}
+                    style={
+                      c
+                        ? { background: c }
+                        : { background: "conic-gradient(from 180deg, #fff 0 50%, #18181b 50% 100%)" }
+                    }
+                  />
+                ))}
+                <label
+                  title={t("placeCustom")}
+                  className={cn(
+                    "relative size-7 cursor-pointer overflow-hidden rounded-full ring-1 ring-border transition-transform hover:scale-110",
+                    s.textColor && !TEXT_COLORS.includes(s.textColor) && "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                  )}
+                  style={{
+                    background:
+                      s.textColor && !TEXT_COLORS.includes(s.textColor)
+                        ? s.textColor
+                        : "conic-gradient(red, yellow, lime, cyan, blue, magenta, red)",
+                  }}
+                >
+                  <input
+                    type="color"
+                    value={s.textColor || "#ffffff"}
+                    onChange={(e) => update("textColor", e.target.value)}
+                    className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-normal">{t("place")}</Label>
+              <Tabs value={s.placeMode} onValueChange={(v) => update("placeMode", v as Settings["placeMode"])}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="auto">
+                    <MapPinIcon /> {t("placeAuto")}
+                  </TabsTrigger>
+                  <TabsTrigger value="timezone">{t("placeTimezone")}</TabsTrigger>
+                  <TabsTrigger value="custom">{t("placeCustom")}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {s.placeMode === "custom" && (
+                <Input
+                  value={s.customPlace}
+                  placeholder={t("placeCustomPlaceholder")}
+                  onChange={(e) => update("customPlace", e.target.value)}
+                />
+              )}
+              {s.placeMode === "auto" && (
+                <div className="space-y-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {!placeAutoUsable
+                        ? t("placeOtherZone")
+                        : place.status === "loading"
+                          ? t("placeLoading")
+                          : place.status === "denied"
+                            ? t("placeDenied")
+                            : place.status === "error"
+                              ? t("placeError")
+                              : place.name
+                                ? t("placeFound", { name: place.name })
+                                : ""}
+                    </span>
+                    {placeAutoUsable && place.status !== "loading" && (
+                      <Button variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-xs" onClick={place.refresh}>
+                        <RefreshCwIcon /> {t("placeRefresh")}
+                      </Button>
+                    )}
+                  </div>
+                  <p>{t("placePrivacy")}</p>
+                </div>
+              )}
             </div>
           </Section>
 
@@ -309,6 +407,9 @@ export function SettingsSheet({
                 <TabsTrigger value="image" disabled={!image}>
                   <ImageIcon /> {t("image")}
                 </TabsTrigger>
+                <TabsTrigger value="webcam">
+                  <CameraIcon /> {t("webcam")}
+                </TabsTrigger>
               </TabsList>
             </Tabs>
 
@@ -336,6 +437,61 @@ export function SettingsSheet({
                   </Row>
                   <Slider min={0} max={3} step={0.1} value={[s.sceneSpeed]} onValueChange={([v]) => update("sceneSpeed", v)} />
                 </div>
+              </>
+            )}
+
+            {s.backgroundMode === "webcam" && (
+              <>
+                <div className="space-y-2">
+                  <Label className="font-normal">{t("webcamColors")}</Label>
+                  <div className="flex items-center gap-2">
+                    <Tabs
+                      value={s.webcamColorMode}
+                      onValueChange={(v) => update("webcamColorMode", v as Settings["webcamColorMode"])}
+                      className="flex-1"
+                    >
+                      <TabsList className="w-full">
+                        <TabsTrigger value="webcam">{t("webcamColorReal")}</TabsTrigger>
+                        <TabsTrigger value="monochrome">{t("webcamColorMono")}</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    {s.webcamColorMode === "monochrome" && (
+                      <label
+                        className="relative size-8 shrink-0 cursor-pointer overflow-hidden rounded-full ring-1 ring-border"
+                        style={{ background: s.webcamColor }}
+                      >
+                        <input
+                          type="color"
+                          value={s.webcamColor}
+                          onChange={(e) => update("webcamColor", e.target.value)}
+                          className="absolute inset-0 size-full cursor-pointer opacity-0"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-normal">{t("webcamDensity")}</Label>
+                  <Tabs value={String(s.webcamDensity)} onValueChange={(v) => update("webcamDensity", Number(v))}>
+                    <TabsList className="w-full">
+                      <TabsTrigger value="40">{t("webcamDensityLarge")}</TabsTrigger>
+                      <TabsTrigger value="64">{t("webcamDensityMedium")}</TabsTrigger>
+                      <TabsTrigger value="96">{t("webcamDensitySmall")}</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+                <div className="space-y-3">
+                  <Row label={t("webcamDarken")}>
+                    <span className="text-xs tabular-nums text-muted-foreground">{Math.round(s.webcamDarken * 100)}%</span>
+                  </Row>
+                  <Slider min={0} max={0.9} step={0.05} value={[s.webcamDarken]} onValueChange={([v]) => update("webcamDarken", v)} />
+                </div>
+                <Row label={t("webcamMirror")} htmlFor="wc-mirror">
+                  <Switch id="wc-mirror" checked={s.webcamMirror} onCheckedChange={set("webcamMirror")} />
+                </Row>
+                <p className="flex gap-2 text-xs text-muted-foreground">
+                  <ShieldCheckIcon className="mt-0.5 size-3.5 shrink-0" /> {t("webcamPrivacy")}
+                </p>
               </>
             )}
 

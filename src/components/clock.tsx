@@ -29,23 +29,44 @@ function WorkProgress({ now, s, onImage, t }: { now: Date; s: Settings; onImage:
   const done = Math.min(Math.max(curAdj - start, 0), total)
   const pct = (done / total) * 100
 
+  // custom text (if set) with {left} {start} {end}; otherwise the built-in translated text
+  const fill = (tpl: string, leftMin: number) =>
+    tpl
+      .replaceAll("{left}", formatDuration(t, leftMin))
+      .replaceAll("{start}", s.workStart)
+      .replaceAll("{end}", s.workEnd)
+
   let label: string
   if (curAdj < start) {
-    label = t("startsIn", { d: formatDuration(t, Math.ceil(start - curAdj)) })
+    const left = Math.ceil(start - curAdj)
+    label = s.progressTextBefore.trim() ? fill(s.progressTextBefore, left) : t("startsIn", { d: formatDuration(t, left) })
   } else if (curAdj >= end) {
-    label = t("workDone")
+    label = s.progressTextAfter.trim() ? fill(s.progressTextAfter, 0) : t("workDone")
   } else {
-    label = t("leftUntilEnd", { d: formatDuration(t, Math.ceil(end - curAdj)) })
+    const left = Math.ceil(end - curAdj)
+    label = s.progressTextDuring.trim() ? fill(s.progressTextDuring, left) : t("leftUntilEnd", { d: formatDuration(t, left) })
   }
 
+  const scale = s.progressScale || 1
+  const muted = onImage ? "text-white/70" : "text-muted-foreground"
+
   return (
-    <div className="mx-auto mt-10 w-full max-w-md">
-      <div className={cn("mb-2 flex justify-between text-xs tabular-nums", onImage ? "text-white/70" : "text-muted-foreground")}>
+    <div
+      className="mx-auto mt-[2.5em] w-full"
+      style={{ maxWidth: `min(100%, ${28 * scale}rem)`, fontSize: `${0.75 * scale}rem` }}
+    >
+      {s.progressTitle.trim() && (
+        <div className="mb-[0.5em] text-[1.6em] font-medium leading-tight">{s.progressTitle}</div>
+      )}
+      <div className={cn("mb-[0.6em] flex items-baseline justify-between gap-[1em] tabular-nums", muted)}>
         <span>{s.workStart}</span>
-        <span>{label}</span>
+        <span className="text-[1.15em] text-balance">{label}</span>
         <span>{s.workEnd}</span>
       </div>
-      <div className={cn("h-1.5 overflow-hidden rounded-full", onImage ? "bg-white/20" : "bg-foreground/10")}>
+      <div
+        className={cn("overflow-hidden rounded-full", onImage ? "bg-white/20" : "bg-foreground/10")}
+        style={{ height: `${0.375 * scale}rem` }}
+      >
         <div
           className={cn("h-full rounded-full transition-[width] duration-1000 ease-linear", onImage ? "bg-white" : "bg-foreground/80")}
           style={{ width: `${pct}%` }}
@@ -79,15 +100,18 @@ export function Clock({ now, settings: s, onImage }: { now: Date; settings: Sett
         {cityName(s.timezone)} · {offsetLabel(s.timezone, now)}
       </div>
 
-      <div className="flex items-baseline justify-center font-mono font-light leading-none tabular-nums tracking-tight">
-        <span className="text-[clamp(4.5rem,18vw,16rem)]">{t.h}</span>
-        <span className="mx-[0.05em] animate-pulse text-[clamp(4.5rem,18vw,16rem)] opacity-60">:</span>
-        <span className="text-[clamp(4.5rem,18vw,16rem)]">{t.m}</span>
+      <div
+        className="flex items-baseline justify-center font-mono font-light leading-none tabular-nums tracking-tight"
+        style={{ "--clock-scale": s.clockScale || 1 } as React.CSSProperties}
+      >
+        <span className="text-[calc(clamp(4.5rem,18vw,16rem)*var(--clock-scale))]">{t.h}</span>
+        <span className="mx-[0.05em] animate-pulse text-[calc(clamp(4.5rem,18vw,16rem)*var(--clock-scale))] opacity-60">:</span>
+        <span className="text-[calc(clamp(4.5rem,18vw,16rem)*var(--clock-scale))]">{t.m}</span>
         {s.showSeconds && (
-          <span className={cn("ml-3 text-[clamp(1.5rem,5vw,4.5rem)]", muted)}>{t.s}</span>
+          <span className={cn("ml-3 text-[calc(clamp(1.5rem,5vw,4.5rem)*var(--clock-scale))]", muted)}>{t.s}</span>
         )}
         {s.hour12 && (
-          <span className={cn("ml-3 text-[clamp(1rem,3vw,2.5rem)] font-medium", muted)}>{t.period}</span>
+          <span className={cn("ml-3 text-[calc(clamp(1rem,3vw,2.5rem)*var(--clock-scale))] font-medium", muted)}>{t.period}</span>
         )}
       </div>
 

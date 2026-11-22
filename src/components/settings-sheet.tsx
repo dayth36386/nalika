@@ -3,7 +3,7 @@
 import { useRef } from "react"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
-import { DropletsIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
+import { BriefcaseIcon, DropletsIcon, PencilLineIcon, ImageIcon, MonitorIcon, MousePointer2Icon, MoveIcon, PauseIcon, WavesIcon, MoonIcon, SunIcon, Trash2Icon, UploadIcon, XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -71,6 +71,13 @@ export function SettingsSheet({
   const fileRef = useRef<HTMLInputElement>(null)
   const t = translator(s.lang)
   const tzText = { searchPlaceholder: t("searchCity"), emptyText: t("noTimezone") }
+  const isWorkPreset =
+    !s.progressTitle && !s.progressTextBefore && !s.progressTextDuring && !s.progressTextAfter && s.progressScale === 1
+  const isExamPreset =
+    s.progressTitle === t("examTitle") &&
+    s.progressTextBefore === t("examBefore") &&
+    s.progressTextDuring === t("examDuring") &&
+    s.progressTextAfter === t("examAfter")
 
   const set =
     <K extends keyof Settings>(key: K) =>
@@ -145,6 +152,12 @@ export function SettingsSheet({
             <Row label={t("showDate")} htmlFor="date">
               <Switch id="date" checked={s.showDate} onCheckedChange={set("showDate")} />
             </Row>
+            <div className="space-y-3">
+              <Row label={t("clockSize")}>
+                <span className="text-xs tabular-nums text-muted-foreground">{Math.round(s.clockScale * 100)}%</span>
+              </Row>
+              <Slider min={0.5} max={1.5} step={0.05} value={[s.clockScale]} onValueChange={([v]) => update("clockScale", v)} />
+            </div>
           </Section>
 
           <Separator />
@@ -200,6 +213,75 @@ export function SettingsSheet({
                   <Input id="we" type="time" value={s.workEnd} onChange={(e) => update("workEnd", e.target.value)} />
                 </div>
               </div>
+            )}
+            {s.showWorkHours && (
+              <>
+                <div className="flex items-center justify-between gap-3">
+                  <Label className="font-normal">{t("preset")}</Label>
+                  <div className="flex gap-1.5">
+                    <Button
+                      variant={isWorkPreset ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={isWorkPreset}
+                      onClick={() => {
+                        update("progressTitle", "")
+                        update("progressTextBefore", "")
+                        update("progressTextDuring", "")
+                        update("progressTextAfter", "")
+                        update("progressScale", 1)
+                      }}
+                    >
+                      <BriefcaseIcon /> {t("presetWork")}
+                    </Button>
+                    <Button
+                      variant={isExamPreset ? "default" : "outline"}
+                      size="sm"
+                      aria-pressed={isExamPreset}
+                      onClick={() => {
+                        update("progressTitle", t("examTitle"))
+                        update("progressTextBefore", t("examBefore"))
+                        update("progressTextDuring", t("examDuring"))
+                        update("progressTextAfter", t("examAfter"))
+                        update("progressScale", 2)
+                      }}
+                    >
+                      <PencilLineIcon /> {t("presetExam")}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <Row label={t("progressSize")}>
+                    <span className="text-xs tabular-nums text-muted-foreground">{Math.round(s.progressScale * 100)}%</span>
+                  </Row>
+                  <Slider min={0.75} max={3} step={0.05} value={[s.progressScale]} onValueChange={([v]) => update("progressScale", v)} />
+                </div>
+
+                <div className="space-y-2.5">
+                  <Label className="font-normal">{t("progressTexts")}</Label>
+                  {(
+                    [
+                      ["progressTitle", "progressTitle", t("examTitle")],
+                      ["progressTextBefore", "textBefore", t("startsIn", { d: "{left}" })],
+                      ["progressTextDuring", "textDuring", t("leftUntilEnd", { d: "{left}" })],
+                      ["progressTextAfter", "textAfter", t("workDone")],
+                    ] as const
+                  ).map(([key, label, placeholder]) => (
+                    <div key={key} className="space-y-1">
+                      <Label htmlFor={key} className="text-xs font-normal text-muted-foreground">
+                        {t(label)}
+                      </Label>
+                      <Input
+                        id={key}
+                        value={s[key]}
+                        placeholder={placeholder}
+                        onChange={(e) => update(key, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">{t("textHint")}</p>
+                </div>
+              </>
             )}
           </Section>
 

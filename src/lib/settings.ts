@@ -26,6 +26,14 @@ export type Settings = {
   showWorkHours: boolean
   workStart: string
   workEnd: string
+  /** Optional heading above the progress bar, e.g. "Math exam". */
+  progressTitle: string
+  /** Custom progress texts; "" = built-in text. Placeholders: {left} {start} {end} */
+  progressTextBefore: string
+  progressTextDuring: string
+  progressTextAfter: string
+  progressScale: number
+  clockScale: number
   showSpotify: boolean
 }
 
@@ -60,6 +68,12 @@ export function defaultSettings(): Settings {
     showWorkHours: true,
     workStart: "09:00",
     workEnd: "18:00",
+    progressTitle: "",
+    progressTextBefore: "",
+    progressTextDuring: "",
+    progressTextAfter: "",
+    progressScale: 1,
+    clockScale: 1,
     showSpotify: true,
   }
 }

@@ -1,0 +1,54 @@
+name: Deploy to Vercel
+
+# Builds with values from GitHub Secrets, then uploads the prebuilt output to Vercel.
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   SPOTIFY_CLIENT_ID   Spotify app Client ID
+#   VERCEL_TOKEN        https://vercel.com/account/tokens
+#   VERCEL_ORG_ID       from .vercel/project.json after `vercel link`
+#   VERCEL_PROJECT_ID   from .vercel/project.json after `vercel link`
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_ENV: ${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }}
+  PROD_FLAG: ${{ github.ref == 'refs/heads/main' && '--prod' || '' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=$VERCEL_ENV --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          # NEXT_PUBLIC_* is inlined into the client bundle at build time
+          NEXT_PUBLIC_SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(vercel deploy --prebuilt $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Deployed: $url" >> "$GITHUB_STEP_SUMMARY"

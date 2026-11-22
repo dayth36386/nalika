@@ -32,7 +32,7 @@ export function AboutButton({ t, className }: { t: T; className?: string }) {
       </PopoverTrigger>
       <PopoverContent side="top" align="end" className="w-64 text-sm">
         <div className="font-medium">
-          {SITE.name} <span className="text-xs font-normal text-muted-foreground">v{SITE.version}</span>
+          {SITE.name} <span className="text-xs font-normal text-muted-foreground">{SITE.version}</span>
         </div>
         <div className="text-muted-foreground">
           {t("madeBy")}{" "}
@@ -52,6 +52,8 @@ export function AboutButton({ t, className }: { t: T; className?: string }) {
             <span className="flex items-center gap-1"><Kbd>F</Kbd> {t("fullscreen")}</span>
             <span className="flex items-center gap-1"><Kbd>S</Kbd> {t("settings")}</span>
             <span className="flex items-center gap-1"><Kbd>T</Kbd> {t("theme")}</span>
+            <span className="flex items-center gap-1"><Kbd>C</Kbd> {t("modeClock")} / {t("modeCountdown")}</span>
+            <span className="flex items-center gap-1"><Kbd>Space</Kbd> {t("cdPause")} / {t("cdResume")}</span>
           </div>
         </div>
         <p className="text-[11px] text-muted-foreground">{t("savedLocally")}</p>

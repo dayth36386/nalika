@@ -187,6 +187,11 @@ export function Countdown({
   const warning = status !== "done" && !urgent && remaining <= 5 * 60_000
   const custom = !!s.textColor
   const muted = custom ? "opacity-70" : onImage ? "text-white/70" : "text-muted-foreground"
+  // Outline buttons don't set a text colour, so they'd inherit white text onto a white
+  // (light theme) fill. Give them their own colours: frosted glass on images, theme colours otherwise.
+  const outlineBtn = onImage
+    ? "border-white/30 bg-black/30 text-white backdrop-blur-md hover:bg-black/45 hover:text-white dark:border-white/30 dark:bg-black/30 dark:hover:bg-black/45"
+    : "text-foreground"
 
   return (
     <div
@@ -283,13 +288,13 @@ export function Countdown({
             <kbd className="ml-1 hidden rounded bg-background/20 px-1.5 text-[10px] font-normal [@media(pointer:fine)]:inline">Space</kbd>
           </Button>
         )}
-        <Button size="lg" variant="outline" className="rounded-full" onClick={() => store.addTime(5 * 60_000)}>
+        <Button size="lg" variant="outline" className={cn("rounded-full", outlineBtn)} onClick={() => store.addTime(5 * 60_000)}>
           <PlusIcon /> {t("cdAdd5")}
         </Button>
         <Button
           size="lg"
           variant={confirmReset ? "destructive" : "outline"}
-          className="rounded-full"
+          className={cn("rounded-full", !confirmReset && outlineBtn)}
           onClick={() => {
             if (confirmReset || status === "done") {
               store.reset()

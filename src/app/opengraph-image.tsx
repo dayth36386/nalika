@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og"
 import { BRAND_ICON_DATA_URL } from "@/lib/brand-icon"
 
-export const alt = "Work Clock — full-screen clock for focused work"
+export const alt = "Nalika — full-screen clock for work and exams"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -52,16 +52,16 @@ export default function OpengraphImage() {
         <div style={{ display: "flex", alignItems: "center", gap: 56, padding: "0 96px", marginTop: -40 }}>
           <img src={icon} width={200} height={200} alt="" style={{ borderRadius: 46 }} />
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 104, fontWeight: 700, letterSpacing: -3, lineHeight: 1 }}>Work Clock</div>
+            <div style={{ fontSize: 104, fontWeight: 700, letterSpacing: -3, lineHeight: 1 }}>Nalika</div>
             <div style={{ fontSize: 38, color: "rgba(255,255,255,0.65)", marginTop: 22 }}>
-              Full-screen clock for focused work
+              Full-screen clock for work & exams
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 34, fontSize: 24, color: "rgba(255,255,255,0.55)" }}>
-              <span>Time zones</span>
+              <span>Countdown</span>
               <span>·</span>
               <span>3D backgrounds</span>
               <span>·</span>
-              <span>Spotify</span>
+              <span>4 languages</span>
             </div>
           </div>
         </div>

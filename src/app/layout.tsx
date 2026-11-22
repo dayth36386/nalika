@@ -20,18 +20,20 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Work Clock",
+  title: "Nalika — นาฬิกาเต็มจอ",
   description,
-  applicationName: "Work Clock",
+  applicationName: "Nalika",
+  // name under the icon when added to an iPhone home screen
+  appleWebApp: { title: "Nalika" },
   openGraph: {
     type: "website",
-    siteName: "Work Clock",
-    title: "Work Clock",
+    siteName: "Nalika",
+    title: "Nalika — นาฬิกาเต็มจอ",
     description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Work Clock",
+    title: "Nalika — นาฬิกาเต็มจอ",
     description,
   },
 }

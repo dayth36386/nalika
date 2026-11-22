@@ -1,6 +1,6 @@
 /** Edit these to change the credit shown in the ⓘ popover. */
 export const SITE = {
-  name: "Work Clock",
+  name: "Nalika",
   /** Set automatically on each release (see README → Versioning); "dev" for local builds. */
   version: process.env.NEXT_PUBLIC_APP_VERSION?.startsWith("0.0.0") ? "dev" : `v${process.env.NEXT_PUBLIC_APP_VERSION}`,
   creator: "Dechawiwatwong Detchang",

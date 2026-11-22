@@ -1,10 +1,12 @@
-# Work Clock
+# Nalika
+
+*Nalika* (นาฬิกา) means "clock" in Thai.
 
 A full-screen clock to keep open while you work — or on the projector during an exam. Next.js 16 + shadcn/ui + Three.js (React Three Fiber). No login; all settings live in `localStorage`.
 
 **Live:** https://workclock-psi.vercel.app — free to use, no sign-up, no ads.
 
-![Work Clock — dark theme with the 3D wave background](docs/screenshots/clock-dark.jpg)
+![Nalika — dark theme with the 3D wave background](docs/screenshots/clock-dark.jpg)
 
 <table>
   <tr>

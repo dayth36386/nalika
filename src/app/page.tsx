@@ -98,12 +98,23 @@ export default function Home() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      if (e.target instanceof Element && e.target.closest("input, textarea, [role=dialog]")) return
-      const key = e.key.toLowerCase()
-      if (key === "f") toggle()
-      if (key === "s") setOpen((o) => !o)
-      if (key === "t") setTheme(dark ? "light" : "dark")
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return
+      // never steal keys while the user is typing
+      if (e.target instanceof Element && e.target.closest("input, textarea, select, [contenteditable=true]")) return
+      // e.code is the physical key, so shortcuts also work with a Thai (or any non-Latin) keyboard layout
+      const inDialog = e.target instanceof Element && !!e.target.closest("[role=dialog]")
+      switch (e.code) {
+        case "KeyS":
+          e.preventDefault()
+          setOpen((o) => !o)
+          break
+        case "KeyF":
+          if (!inDialog) toggle()
+          break
+        case "KeyT":
+          if (!inDialog) setTheme(dark ? "light" : "dark")
+          break
+      }
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)

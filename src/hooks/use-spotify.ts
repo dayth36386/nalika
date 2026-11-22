@@ -11,7 +11,6 @@ export function useSpotify(enabled: boolean) {
   const [status, setStatus] = useState<SpotifyStatus>("idle")
   const [profile, setProfile] = useState<sp.Profile | null>(null)
   const [track, setTrack] = useState<sp.Track | null>(null)
-  const [clientId, setClientIdState] = useState("")
   const redirectHandled = useRef(false)
 
   const disconnect = useCallback(() => {
@@ -31,8 +30,7 @@ export function useSpotify(enabled: boolean) {
 
   // Initial load: finish an OAuth redirect if present, then fetch profile.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time read from localStorage
-    setClientIdState(sp.getClientId())
+    sp.clearLegacyClientId()
     if (redirectHandled.current) return
     redirectHandled.current = true
     ;(async () => {
@@ -86,17 +84,11 @@ export function useSpotify(enabled: boolean) {
     [poll]
   )
 
-  const saveClientId = useCallback((id: string) => {
-    sp.setClientId(id)
-    setClientIdState(sp.getClientId())
-  }, [])
-
   return {
     status,
     profile,
     track,
-    clientId,
-    saveClientId,
+    configured: !!sp.getClientId(),
     connect: sp.startLogin,
     disconnect,
     control,

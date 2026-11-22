@@ -2,30 +2,21 @@
 
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
-import { CopyIcon, LogOutIcon, TriangleAlertIcon } from "lucide-react"
+import { LogOutIcon, TriangleAlertIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { SpotifyGlyph } from "@/components/now-playing"
 import type { SpotifyStore } from "@/hooks/use-spotify"
 import type { T } from "@/lib/i18n"
 import { isOnLocalhostAlias, redirectUri } from "@/lib/spotify"
 
 export function SpotifySettings({ spotify, t }: { spotify: SpotifyStore; t: T }) {
-  const { status, profile, clientId, saveClientId, connect, disconnect } = spotify
-  const [draft, setDraft] = useState(clientId)
-  const [uri, setUri] = useState("")
-  const [onLocalhost, setOnLocalhost] = useState(false)
+  const { status, profile, configured, connect, disconnect } = spotify
+  const [loopbackUrl, setLoopbackUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- window-only values
-    setUri(redirectUri())
-    setOnLocalhost(isOnLocalhostAlias())
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- window-only value
+    if (isOnLocalhostAlias()) setLoopbackUrl(redirectUri())
   }, [])
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync draft when stored id loads
-    setDraft(clientId)
-  }, [clientId])
 
   if (status === "connected" && profile) {
     return (
@@ -44,46 +35,20 @@ export function SpotifySettings({ spotify, t }: { spotify: SpotifyStore; t: T })
     )
   }
 
-  const fixedUrl = uri // redirectUri() already rewrites localhost -> 127.0.0.1
+  if (!configured) {
+    return <p className="text-xs text-muted-foreground">{t("spotifyNotConfigured")}</p>
+  }
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">{t("spotifyClientIdHint")}</p>
-      <div className="flex gap-2">
-        <Input readOnly value={uri} className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Copy"
-          onClick={() => {
-            navigator.clipboard?.writeText(uri).then(() => toast(t("copied")), () => {})
-          }}
-        >
-          <CopyIcon />
-        </Button>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="sp-client" className="text-xs font-normal text-muted-foreground">
-          {t("spotifyClientId")}
-        </Label>
-        <Input
-          id="sp-client"
-          value={draft}
-          placeholder="e.g. 1a2b3c4d5e6f…"
-          className="font-mono text-xs"
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => saveClientId(draft)}
-        />
-      </div>
-
-      {onLocalhost && (
+      {/* Dev only: Spotify rejects "localhost" redirect URIs */}
+      {loopbackUrl && (
         <div className="flex gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 text-xs">
           <TriangleAlertIcon className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
           <span>
             {t("spotifyLocalhost")}
-            <a className="font-mono underline underline-offset-2" href={fixedUrl}>
-              {fixedUrl}
+            <a className="font-mono underline underline-offset-2" href={loopbackUrl}>
+              {loopbackUrl}
             </a>
           </span>
         </div>
@@ -91,9 +56,8 @@ export function SpotifySettings({ spotify, t }: { spotify: SpotifyStore; t: T })
 
       <Button
         className="w-full bg-[#1DB954] text-black hover:bg-[#1ed760]"
-        disabled={!draft.trim() || onLocalhost || status === "connecting"}
+        disabled={!!loopbackUrl || status === "connecting"}
         onClick={async () => {
-          saveClientId(draft)
           try {
             await connect()
           } catch {

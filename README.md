@@ -24,8 +24,8 @@ Runs fully in the browser (OAuth Authorization Code + PKCE, no backend, no clien
 
 1. Go to https://developer.spotify.com/dashboard → **Create app** (select *Web API*).
 2. Add Redirect URI **`http://127.0.0.1:3000/`** — Spotify no longer accepts `localhost`, so open the app at `http://127.0.0.1:3000` too. For a deployed site use `https://your-domain/`.
-3. Copy the **Client ID** → paste it in Settings → Spotify → **Connect Spotify**.
-   (Or set `NEXT_PUBLIC_SPOTIFY_CLIENT_ID` in `.env.local` as a default — see `.env.example`.)
+3. Put the **Client ID** in `.env.local` as `NEXT_PUBLIC_SPOTIFY_CLIENT_ID` (see `.env.example`). In CI it comes from the GitHub secret `SPOTIFY_CLIENT_ID`.
+4. Settings → Spotify → **Connect Spotify**.
 
 Notes (Spotify rules, 2026): Development-mode apps require the app owner to have **Premium** and allow up to 5 authorized users (add them under *User Management*). Play/pause/skip needs Premium and an active Spotify device.
 

@@ -69,13 +69,14 @@ export function isOnLocalhostAlias() {
   return window.location.hostname === "localhost"
 }
 
+/** Set at build time from NEXT_PUBLIC_SPOTIFY_CLIENT_ID (.env.local locally, GitHub secret in CI). */
 export function getClientId() {
-  return ls.get(CLIENT_KEY) || process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || ""
+  return process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || ""
 }
 
-export function setClientId(id: string) {
-  if (id.trim()) ls.set(CLIENT_KEY, id.trim())
-  else ls.del(CLIENT_KEY)
+/** Drop the Client ID older versions stored in the browser. */
+export function clearLegacyClientId() {
+  ls.del(CLIENT_KEY)
 }
 
 function readToken(): Token | null {
